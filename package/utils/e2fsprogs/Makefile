@@ -8,14 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=e2fsprogs
-PKG_VERSION:=1.43.4
-PKG_HASH:=
-PKG_MD5SUM:=0bd1c74f357f6e9ae2ab6fa6229b9aea
-
-PKG_RELEASE:=2
+PKG_VERSION:=1.43.6
+PKG_MD5SUM:=94fb7105284474a71cf5dd0e03b92661
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=@SF/e2fsprogs
+PKG_SOURCE_URL:=@KERNEL/linux/kernel/people/tytso/e2fsprogs/v$(PKG_VERSION)/
+PKG_LICENSE:=GPL-2.0
 
 PKG_BUILD_DEPENDS:=util-linux
 PKG_INSTALL:=1
@@ -46,8 +45,8 @@ define Package/libext2fs
 $(call Package/e2fsprogs/Default)
   SECTION:=libs
   CATEGORY:=Libraries
+  DEPENDS:=+libuuid +librt
   TITLE:=ext2/3/4 filesystem library
-  DEPENDS:=+librt
 endef
 
 define Package/libext2fs/description
