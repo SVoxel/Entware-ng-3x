@@ -8,13 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=e2fsprogs
-PKG_VERSION:=1.43.6
-PKG_MD5SUM:=94fb7105284474a71cf5dd0e03b92661
+PKG_VERSION:=1.43.9
+PKG_HASH:=926f8e8de1ffba55d791f21b71334e8a32b5227257ad370f2bf7e4396629e97f
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@KERNEL/linux/kernel/people/tytso/e2fsprogs/v$(PKG_VERSION)/
 PKG_LICENSE:=GPL-2.0
+PKG_CPE_ID:=cpe:/a:e2fsprogs_project:e2fsprogs
 
 PKG_BUILD_DEPENDS:=util-linux
 PKG_INSTALL:=1
@@ -45,7 +46,7 @@ define Package/libext2fs
 $(call Package/e2fsprogs/Default)
   SECTION:=libs
   CATEGORY:=Libraries
-  DEPENDS:=+libuuid +librt
+  DEPENDS:=+libuuid +libblkid +librt
   TITLE:=ext2/3/4 filesystem library
 endef
 
@@ -109,19 +110,17 @@ endef
 
 TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections
 
-CONFIGURE_VARS += \
-	ac_cv_lib_pthread_sem_init=no
-
 CONFIGURE_ARGS += \
 	--disable-testio-debug \
 	--enable-elf-shlibs	\
 	--disable-libuuid	\
-	--enable-libblkid	\
-	--disable-defrag	\
+	--disable-libblkid	\
 	--disable-uuidd		\
 	--disable-tls		\
 	--disable-nls		\
-	--disable-rpath
+	--disable-rpath		\
+	--disable-threads	\
+	--disable-fuse2fs
 
 define Build/Prepare
 	$(call Build/Prepare/Default)
@@ -130,16 +129,19 @@ endef
 
 define Build/Compile
 	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR)/util \
-		BUILD_CC="$(HOSTCC)" \
+		BUILDCC="$(HOSTCC)" \
 		CFLAGS="" \
 		CPPFLAGS="" \
 		LDFLAGS="" \
+		V=$(if $(findstring c,$(OPENWRT_VERBOSE)),1,) \
 		subst
 	+$(MAKE) $(PKG_JOBS) -C $(PKG_BUILD_DIR) \
 		LDFLAGS="$(TARGET_LDFLAGS)" \
-		BUILD_CC="$(HOSTCC)" \
+		BUILDCC="$(HOSTCC)" \
 		DESTDIR="$(PKG_INSTALL_DIR)" \
-		LIBBLKID="$(PKG_BUILD_DIR)/lib/libblkid.a -luuid" \
+		ELF_OTHER_LIBS="$(TARGET_LDFLAGS) -luuid" \
+		SYSLIBS="$(TARGET_LDFLAGS) -ldl -L$(PKG_BUILD_DIR)/lib/ -l:libcom_err.so.0.0" \
+		V=$(if $(findstring c,$(OPENWRT_VERBOSE)),1,) \
 		all
 endef
 

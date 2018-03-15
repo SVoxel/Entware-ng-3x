@@ -9,8 +9,8 @@ include $(TOPDIR)/rules.mk
 
 ARCH:=arm
 BOARD:=cortex-a15-3x
-BOARDNAME:=Entware-3x (Cortex-A15, hard float, kernel-3.4.103)
-FEATURES:=
+BOARDNAME:=Entware (Cortex-A15, hard float, kernel-3.4.103)
+FEATURES:=usb audio pci
 KERNEL_PATCHVER:=3.4.103
 CPU_TYPE:=cortex-a15
 DEFAULT_PACKAGES := toolchain

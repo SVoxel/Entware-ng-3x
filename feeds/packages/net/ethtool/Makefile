@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2017 OpenWrt.org
+# Copyright (C) 2006-2014 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,13 +8,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=ethtool
-PKG_VERSION:=4.11
+PKG_VERSION:=4.15
 PKG_RELEASE:=1
 
 PKG_MAINTAINER:=Matthias Schiffer <mschiffer@universe-factory.net>
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@KERNEL/software/network/ethtool
-PKG_MD5SUM:=16d38f4ebe23e44f96f7d8b38ed3652c
+PKG_HASH:=71f7fd32483ffdc7c6c4d882e230714eb101df0a46cbe396dbeb8ac78f1ef91a
 
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING
@@ -50,8 +50,8 @@ CONFIGURE_ARGS += --disable-pretty-dump
 endif
 
 define Package/ethtool/install
-	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ethtool $(1)/usr/sbin
+	$(INSTALL_DIR) $(1)/opt/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ethtool $(1)/opt/sbin
 endef
 
 $(eval $(call BuildPackage,ethtool))
