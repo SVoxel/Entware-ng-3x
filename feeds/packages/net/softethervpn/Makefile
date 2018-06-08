@@ -97,7 +97,7 @@ define Package/softethervpn
   SECTION:=net
   CATEGORY:=Network
   SUBMENU:=VPN
-  DEPENDS:=+libpthread +librt +libreadline +libopenssl +libncurses +zlib +USE_GLIBC:gconv-modules
+  DEPENDS:=+libpthread +librt +libreadline +libopenssl +libncurses +zlib $(ICONV_DEPENDS) +USE_GLIBC:gconv-modules
   TITLE:=Free Cross-platform Multi-protocol VPN server and client
   URL:=http://www.softether.org/
   MAINTAINER:=Federico Di Marco <fededim@gmail.com>
@@ -141,7 +141,6 @@ define Package/softethervpn/install
 	#$(LN) ../../opt/libexec/softethervpn/launcher.sh $(1)/opt/bin/vpnbridge
 	$(LN) ../../opt/libexec/softethervpn/launcher.sh $(1)/opt/bin/vpncmd
 
-	$(INSTALL_DIR) $(1)/opt/etc
 	$(INSTALL_DIR) $(1)/opt/etc/init.d
 	$(INSTALL_BIN) files/S05vpnserver $(1)/opt/etc/init.d/
 	$(INSTALL_BIN) files/S05vpnbridge $(1)/opt/etc/init.d/
