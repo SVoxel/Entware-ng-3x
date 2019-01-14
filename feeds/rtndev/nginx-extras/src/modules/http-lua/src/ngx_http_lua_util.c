@@ -710,7 +710,7 @@ static void
 ngx_http_lua_inject_ngx_api(lua_State *L, ngx_http_lua_main_conf_t *lmcf,
     ngx_log_t *log)
 {
-    lua_createtable(L, 0 /* narr */, 116 /* nrec */);    /* ngx.* */
+    lua_createtable(L, 0 /* narr */, 117 /* nrec */);    /* ngx.* */
 
     lua_pushcfunction(L, ngx_http_lua_get_raw_phase_context);
     lua_setfield(L, -2, "_phase_ctx");
@@ -1055,7 +1055,8 @@ ngx_http_lua_run_thread(lua_State *L, ngx_http_request_t *r,
                  * check if coroutine.resume or coroutine.yield called
                  * lua_yield()
                  */
-                switch(ctx->co_op) {
+                switch (ctx->co_op) {
+
                 case NGX_HTTP_LUA_USER_CORO_NOP:
                     dd("hit! it is the API yield");
 
@@ -2169,8 +2170,7 @@ ngx_http_lua_handle_exec(lua_State *L, ngx_http_request_t *r,
 #endif
 
         rc = ngx_http_named_location(r, &ctx->exec_uri);
-        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE)
-        {
+        if (rc == NGX_ERROR || rc >= NGX_HTTP_SPECIAL_RESPONSE) {
             return rc;
         }
 
@@ -3055,13 +3055,13 @@ ngx_http_lua_create_co_ctx(ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
 /* this is for callers other than the content handler */
 ngx_int_t
 ngx_http_lua_run_posted_threads(ngx_connection_t *c, lua_State *L,
-    ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx)
+    ngx_http_request_t *r, ngx_http_lua_ctx_t *ctx, ngx_uint_t nreqs)
 {
     ngx_int_t                        rc;
     ngx_http_lua_posted_thread_t    *pt;
 
     for ( ;; ) {
-        if (c->destroyed) {
+        if (c->destroyed || c->requests != nreqs) {
             return NGX_DONE;
         }
 
@@ -3461,6 +3461,7 @@ ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
 {
     lua_State                   *vm;
     ngx_int_t                    rc;
+    ngx_uint_t                   nreqs;
     ngx_connection_t            *c;
     ngx_http_lua_ctx_t          *ctx;
 
@@ -3480,6 +3481,7 @@ ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
 
     c = r->connection;
     vm = ngx_http_lua_get_lua_vm(r, ctx);
+    nreqs = c->requests;
 
     rc = ngx_http_lua_run_thread(vm, r, ctx, 0);
 
@@ -3487,12 +3489,12 @@ ngx_http_lua_on_abort_resume(ngx_http_request_t *r)
                    "lua run thread returned %d", rc);
 
     if (rc == NGX_AGAIN) {
-        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
     }
 
     if (rc == NGX_DONE) {
         ngx_http_lua_finalize_request(r, NGX_DONE);
-        return ngx_http_lua_run_posted_threads(c, vm, r, ctx);
+        return ngx_http_lua_run_posted_threads(c, vm, r, ctx, nreqs);
     }
 
     if (ctx->entered_content_phase) {
@@ -3765,6 +3767,12 @@ ngx_http_lua_init_vm(lua_State *parent_vm, ngx_cycle_t *cycle,
     state->count = 1;
 
     cln->data = state;
+
+    if (lmcf->vm_cleanup == NULL) {
+        /* this assignment will happen only once,
+         * and also only for the main Lua VM */
+        lmcf->vm_cleanup = cln;
+    }
 
     if (pcln) {
         *pcln = cln;

@@ -4,7 +4,7 @@ use Test::Nginx::Socket::Lua;
 
 repeat_each(2);
 
-plan tests => repeat_each() * 190;
+plan tests => repeat_each() * 199;
 
 our $HtmlDir = html_dir;
 
@@ -321,7 +321,7 @@ send: nil closed
 receive: nil closed
 close: nil closed
 --- error_log
-lua tcp socket connect timed out
+lua tcp socket connect timed out, when connecting to 172.105.207.225:12345
 --- timeout: 10
 
 
@@ -3688,5 +3688,123 @@ connected: 1
 request sent: 11
 received: OK
 close: 1 nil
+--- no_error_log
+[error]
+
+
+
+=== TEST 61: resolver send query failing immediately in connect()
+this case did not clear coctx->cleanup properly and would lead to memory invalid accesses.
+
+this test case requires the following iptables rule to work properly:
+
+sudo iptables -I OUTPUT 1 -p udp --dport 10086 -j REJECT
+
+--- config
+    location /t {
+        resolver 127.0.0.1:10086 ipv6=off;
+        resolver_timeout 10ms;
+
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+
+            for i = 1, 3 do -- retry
+                local ok, err = sock:connect("www.google.com", 80)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                end
+            end
+
+            ngx.say("hello!")
+        }
+    }
+--- request
+GET /t
+--- response_body
+failed to connect: www.google.com could not be resolved
+failed to connect: www.google.com could not be resolved
+failed to connect: www.google.com could not be resolved
+hello!
+--- error_log eval
+qr{\[alert\] .*? send\(\) failed \(\d+: Operation not permitted\) while resolving}
+
+
+
+=== TEST 62: the upper bound of port range should be 2^16 - 1
+--- config
+    location /t {
+        content_by_lua_block {
+            local sock, err = ngx.socket.connect("127.0.0.1", 65536)
+            if not sock then
+                ngx.say("failed to connect: ", err)
+            end
+        }
+    }
+--- request
+GET /t
+--- response_body
+failed to connect: bad port number: 65536
+--- no_error_log
+[error]
+
+
+
+=== TEST 63: send boolean and nil
+--- config
+    location /t {
+        set $port $TEST_NGINX_SERVER_PORT;
+
+        content_by_lua_block {
+            local sock = ngx.socket.tcp()
+            local port = ngx.var.port
+            local ok, err = sock:connect("127.0.0.1", port)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            local function send(data)
+                local bytes, err = sock:send(data)
+                if not bytes then
+                    ngx.say("failed to send request: ", err)
+                    return
+                end
+            end
+
+            local req = "GET /foo HTTP/1.0\r\nHost: localhost\r\nConnection: close\r\nTest: "
+            send(req)
+            send(true)
+            send(false)
+            send(nil)
+            send("\r\n\r\n")
+
+            while true do
+                local line, err, part = sock:receive()
+                if line then
+                    ngx.say("received: ", line)
+                else
+                    break
+                end
+            end
+
+            ok, err = sock:close()
+        }
+    }
+
+    location /foo {
+        server_tokens off;
+        more_clear_headers Date;
+        echo $http_test;
+    }
+
+--- request
+GET /t
+--- response_body
+received: HTTP/1.1 200 OK
+received: Server: nginx
+received: Content-Type: text/plain
+received: Connection: close
+received: 
+received: truefalsenil
 --- no_error_log
 [error]

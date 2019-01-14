@@ -21,8 +21,8 @@ ifeq ($(PKG_VERSION),2.25)
   PKG_HASH:=94a7a5d7a0094de5b358b340e9b55806f2fe544bc556f3057b6c88a6460fe681
 endif
 
-ifeq ($(PKG_VERSION),2.26)
-  PKG_HASH:=31e90926a1d3093355aa85c04c68b3d109c3dc3d9f80afe50505e864b32ac784
+ifeq ($(PKG_VERSION),2.27)
+  PKG_HASH:=e49c919c83579984f7c2442243861d04227e8dc831a08d7bf60cdacfdcd08797
 endif
 
 PATCH_DIR:=$(PATH_PREFIX)/patches/$(PKG_VERSION)
@@ -68,6 +68,7 @@ GLIBC_CONFIGURE:= \
 		--enable-add-ons \
 		--enable-obsolete-rpc \
 		$(if $(CONFIG_GLIBC_USE_VERSION_2_26),--enable-obsolete-nsl,) \
+		$(if $(CONFIG_GLIBC_USE_VERSION_2_27),--enable-obsolete-nsl,) \
 		--$(if $(CONFIG_SOFT_FLOAT),without,with)-fp
 
 export libc_cv_ssp=no

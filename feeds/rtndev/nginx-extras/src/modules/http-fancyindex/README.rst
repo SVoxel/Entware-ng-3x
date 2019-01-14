@@ -26,12 +26,32 @@ server written by `Igor Sysoev <http://sysoev.ru>`__.
 Requirements
 ============
 
-You will need the sources for Nginx_. Any version starting from the 0.7
+CentOS 7
+~~~~~~~~
+
+For users of the  `official stable <https://www.nginx.com/resources/wiki/start/topics/tutorials/install/>`__  Nginx repository, `extra packages repository with dynamic modules <https://www.getpagespeed.com/redhat>`__ is available and fancyindex is included.
+
+Install directly:: 
+
+    yum install https://extras.getpagespeed.com/redhat/7/x86_64/RPMS/nginx-module-fancyindex-1.12.0.0.4.1-1.el7.gps.x86_64.rpm
+
+Alternatively, add extras repository first (for future updates) and install the module::
+
+    yum install nginx-module-fancyindex
+    
+Then load the module in `/etc/nginx/nginx.conf` using::
+
+   load_module "modules/ngx_http_fancyindex_module.so";
+
+Other platforms
+~~~~~~~~~~~~~~~
+
+In most other cases you will need the sources for Nginx_. Any version starting from the 0.7
 series onwards will work.  Note that the modules *might* compile with
 versions in the 0.6 series by applying ``nginx-0.6-support.patch``, but this
 is unsupported (YMMV).
 
-In order to use the fancyindex_header_ and fancyindex_footer_ directives
+In order to use the ``fancyindex_header_`` and ``fancyindex_footer_`` directives
 you will also need the `ngx_http_addition_module <http://nginx.org/en/docs/http/ngx_http_addition_module.html>`_
 built into Nginx.
 
@@ -58,7 +78,9 @@ Building
 
    Since version 0.4.0, the module can also be built as a
    `dynamic module <https://www.nginx.com/resources/wiki/extending/converting/>`_,
-   using ``--add-dynamic-module=…`` instead.
+   using ``--add-dynamic-module=…`` instead and
+   ``load_module "modules/ngx_http_fancyindex_module.so";``
+   in the configuration file
 
 4. Build and install the software::
 
@@ -92,10 +114,15 @@ achieved using the module:
 * `Theme <https://github.com/TheInsomniac/Nginx-Fancyindex-Theme>`__ by
   `@TheInsomniac <https://github.com/TheInsomniac>`__. Uses custom header and
   footer.
-* `Theme <https://github.com/nwrd/Nginx-Fancyindex-Theme>`__ by
-  nwrd <https://github.com/nwrd>`__. Uses custom header and footer, the
-  header includes search field to filter by filename using JavaScript
-  (`demo <http://nwrd.sly.io/>`__).
+* `Theme <https://github.com/Naereen/Nginx-Fancyindex-Theme>`__ by
+  `@Naereen <https://github.com/Naereen/>`__. Uses custom header and footer, the
+  header includes search field to filter by filename using JavaScript.
+* `Theme <https://github.com/fraoustin/Nginx-Fancyindex-Theme>`__ by
+  `@fraoustin <https://github.com/fraoustin>`__. Responsive theme using
+  Material Design elements.
+* `Theme <https://github.com/alehaa/nginx-fancyindex-flat-theme>`__ by
+  `@alehaa <https://github.com/alehaa>`__. Simple, flat theme based on
+  Bootstrap 4 and FontAwesome.
 
 
 Directives

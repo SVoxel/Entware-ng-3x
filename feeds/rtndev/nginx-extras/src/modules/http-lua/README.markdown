@@ -62,7 +62,7 @@ Production ready.
 Version
 =======
 
-This document describes ngx_lua [v0.10.10](https://github.com/openresty/lua-nginx-module/tags) released on 8 August 2017.
+This document describes ngx_lua [v0.10.13](https://github.com/openresty/lua-nginx-module/tags) released on 22 April 2018.
 
 Synopsis
 ========
@@ -249,6 +249,8 @@ Nginx Compatibility
 
 The latest version of this module is compatible with the following versions of Nginx:
 
+* 1.13.x  (last tested: 1.13.6)
+* 1.12.x
 * 1.11.x  (last tested: 1.11.2)
 * 1.10.x
 * 1.9.x (last tested: 1.9.15)
@@ -263,12 +265,12 @@ Nginx cores older than 1.6.0 (exclusive) are *not* supported.
 Installation
 ============
 
-It is *highly* recommended to use [OpenResty releases](http://openresty.org) which integrate Nginx, ngx_lua, LuaJIT 2.1, as well as other powerful companion Nginx modules and Lua libraries. It is discouraged to build this module with nginx yourself since it is tricky to set up exactly right. Also, the stock nginx cores have various limitations and long standing bugs that can make some of this modules' features become disabled, not work properly, or run slower.
+It is *highly* recommended to use [OpenResty releases](http://openresty.org) which integrate Nginx, ngx_lua, LuaJIT 2.1, as well as other powerful companion Nginx modules and Lua libraries. It is discouraged to build this module with nginx yourself since it is tricky to set up exactly right. Also, the stock nginx cores have various limitations and long standing bugs that can make some of this modules' features become disabled, not work properly, or run slower. The same applies to LuaJIT as well. OpenResty includes its own version of LuaJIT which gets specifically optimized and enhanced for the OpenResty environment.
 
 Alternatively, ngx_lua can be manually compiled into Nginx:
 
 1. Install LuaJIT 2.0 or 2.1 (recommended) or Lua 5.1 (Lua 5.2 is *not* supported yet). LuaJIT can be downloaded from the [LuaJIT project website](http://luajit.org/download.html) and Lua 5.1, from the [Lua project website](http://www.lua.org/).  Some distribution package managers also distribute LuaJIT and/or Lua.
-1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simpl/ngx_devel_kit/tags).
+1. Download the latest version of the ngx_devel_kit (NDK) module [HERE](https://github.com/simplresty/ngx_devel_kit/tags).
 1. Download the latest version of ngx_lua [HERE](https://github.com/openresty/lua-nginx-module/tags).
 1. Download the latest version of Nginx [HERE](http://nginx.org/) (See [Nginx Compatibility](#nginx-compatibility))
 
@@ -276,9 +278,9 @@ Build the source with this module:
 
 ```bash
 
- wget 'http://nginx.org/download/nginx-1.11.2.tar.gz'
- tar -xzvf nginx-1.11.2.tar.gz
- cd nginx-1.11.2/
+ wget 'http://nginx.org/download/nginx-1.13.6.tar.gz'
+ tar -xzvf nginx-1.13.6.tar.gz
+ cd nginx-1.13.6/
 
  # tell nginx's build system where to find LuaJIT 2.0:
  export LUAJIT_LIB=/path/to/luajit/lib
@@ -838,7 +840,7 @@ As noted earlier, PCRE sequences presented within `*_by_lua_block {}` directives
  # nginx.conf
  location /test {
      content_by_lua_block {
-         local regex = "\d+"
+         local regex = [[\d+]]
          local m = ngx.re.match("hello, 1234", regex)
          if m then ngx.say(m[0]) else ngx.say("not matched!") end
      }
@@ -871,6 +873,7 @@ Nginx may terminate a request early with (at least):
 * 400 (Bad Request)
 * 405 (Not Allowed)
 * 408 (Request Timeout)
+* 413 (Request Entity Too Large)
 * 414 (Request URI Too Large)
 * 494 (Request Headers Too Large)
 * 499 (Client Closed Request)
@@ -938,7 +941,7 @@ The following dependencies are required to run the test suite:
 	* Test::Nginx: <https://github.com/openresty/test-nginx>
 
 * Nginx modules:
-	* [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit)
+	* [ngx_devel_kit](https://github.com/simplresty/ngx_devel_kit)
 	* [ngx_set_misc](https://github.com/openresty/set-misc-nginx-module)
 	* [ngx_auth_request](http://mdounin.ru/files/ngx_http_auth_request_module-0.2.tar.gz) (this is not needed if you're using Nginx 1.5.4+.
 	* [ngx_echo](https://github.com/openresty/echo-nginx-module)
@@ -992,7 +995,7 @@ This module is licensed under the BSD license.
 
 Copyright (C) 2009-2017, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
-Copyright (C) 2009-2017, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, OpenResty Inc.
+Copyright (C) 2009-2018, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, OpenResty Inc.
 
 All rights reserved.
 
@@ -1023,7 +1026,7 @@ See Also
 * [Dynamic Routing Based on Redis and Lua](http://openresty.org/#DynamicRoutingBasedOnRedis)
 * [Using LuaRocks with ngx_lua](http://openresty.org/#UsingLuaRocks)
 * [Introduction to ngx_lua](https://github.com/openresty/lua-nginx-module/wiki/Introduction)
-* [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit)
+* [ngx_devel_kit](https://github.com/simplresty/ngx_devel_kit)
 * [echo-nginx-module](http://github.com/openresty/echo-nginx-module)
 * [drizzle-nginx-module](http://github.com/openresty/drizzle-nginx-module)
 * [postgres-nginx-module](https://github.com/FRiCKLE/ngx_postgres)
@@ -1335,16 +1338,19 @@ Runs the Lua code specified by the argument `<lua-script-str>` on the global Lua
 
 When Nginx receives the `HUP` signal and starts reloading the config file, the Lua VM will also be re-created and `init_by_lua` will run again on the new Lua VM. In case that the [lua_code_cache](#lua_code_cache) directive is turned off (default on), the `init_by_lua` handler will run upon every request because in this special mode a standalone Lua VM is always created for each request.
 
-Usually you can register (true) Lua global variables or pre-load Lua modules at server start-up by means of this hook. Here is an example for pre-loading Lua modules:
+Usually you can pre-load Lua modules at server start-up by means of this hook and take advantage of modern operating systems' copy-on-write (COW) optimization. Here is an example for pre-loading Lua modules:
 
 ```nginx
 
- init_by_lua 'cjson = require "cjson"';
+ # this runs before forking out nginx worker processes:
+ init_by_lua_block { require "cjson" }
 
  server {
      location = /api {
          content_by_lua_block {
-             ngx.say(cjson.encode({dog = 5, cat = 6}))
+             -- the following require() will just  return
+             -- the alrady loaded module from package.loaded:
+             ngx.say(require "cjson".encode{dog = 5, cat = 6})
          }
      }
  }
@@ -1356,10 +1362,10 @@ You can also initialize the [lua_shared_dict](#lua_shared_dict) shm storage at t
 
  lua_shared_dict dogs 1m;
 
- init_by_lua '
+ init_by_lua_block {
      local dogs = ngx.shared.dogs;
      dogs:set("Tom", 56)
- ';
+ }
 
  server {
      location = /api {
@@ -1481,6 +1487,8 @@ This hook is often used to create per-worker reoccurring timers (via the [ngx.ti
 
 This directive was first introduced in the `v0.9.5` release.
 
+This hook no longer runs in the cache manager and cache loader processes since the `v0.10.12` release.
+
 [Back to TOC](#directives)
 
 init_worker_by_lua_block
@@ -1508,6 +1516,8 @@ For instance,
 
 This directive was first introduced in the `v0.9.17` release.
 
+This hook no longer runs in the cache manager and cache loader processes since the `v0.10.12` release.
+
 [Back to TOC](#directives)
 
 init_worker_by_lua_file
@@ -1522,6 +1532,8 @@ init_worker_by_lua_file
 Similar to [init_worker_by_lua](#init_worker_by_lua), but accepts the file path to a Lua source file or Lua bytecode file.
 
 This directive was first introduced in the `v0.9.5` release.
+
+This hook no longer runs in the cache manager and cache loader processes since the `v0.10.12` release.
 
 [Back to TOC](#directives)
 
@@ -1582,7 +1594,7 @@ This directive can be freely mixed with all directives of the [ngx_http_rewrite_
 
 As from the `v0.5.0rc29` release, Nginx variable interpolation is disabled in the `<lua-script-str>` argument of this directive and therefore, the dollar sign character (`$`) can be used directly.
 
-This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
+This directive requires the [ngx_devel_kit](https://github.com/simplresty/ngx_devel_kit) module.
 
 [Back to TOC](#directives)
 
@@ -1635,7 +1647,7 @@ and the Nginx config must be reloaded each time the Lua source file is modified.
 The Lua code cache can be temporarily disabled during development by
 switching [lua_code_cache](#lua_code_cache) `off` in `nginx.conf` to avoid reloading Nginx.
 
-This directive requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
+This directive requires the [ngx_devel_kit](https://github.com/simplresty/ngx_devel_kit) module.
 
 [Back to TOC](#directives)
 
@@ -2691,7 +2703,7 @@ ssl_session_store_by_lua_file
 
 **context:** *http*
 
-**phase:** *right-before-SSL-handshake*
+**phase:** *right-after-SSL-handshake*
 
 Equivalent to [ssl_session_store_by_lua_block](#ssl_session_store_by_lua_block), except that the file specified by `<path-to-lua-script-file>` contains the Lua code, or rather, the [Lua/LuaJIT bytecode](#lualuajit-bytecode-support) to be executed.
 
@@ -2909,13 +2921,15 @@ This directive was first introduced in the `v0.9.11` release.
 lua_ssl_protocols
 -----------------
 
-**syntax:** *lua_ssl_protocols \[SSLv2\] \[SSLv3\] \[TLSv1\] [TLSv1.1] [TLSv1.2]*
+**syntax:** *lua_ssl_protocols \[SSLv2\] \[SSLv3\] \[TLSv1\] [TLSv1.1] [TLSv1.2] [TLSv1.3]*
 
 **default:** *lua_ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2*
 
 **context:** *http, server, location*
 
 Enables the specified protocols for requests to a SSL/TLS server in the [tcpsock:sslhandshake](#tcpsocksslhandshake) method.
+
+The support for the `TLSv1.3` parameter requires version `v0.10.12` *and* OpenSSL 1.1.1.
 
 This directive was first introduced in the `v0.9.11` release.
 
@@ -3188,9 +3202,13 @@ Nginx API for Lua
 * [ngx.shared.DICT.lpop](#ngxshareddictlpop)
 * [ngx.shared.DICT.rpop](#ngxshareddictrpop)
 * [ngx.shared.DICT.llen](#ngxshareddictllen)
+* [ngx.shared.DICT.ttl](#ngxshareddictttl)
+* [ngx.shared.DICT.expire](#ngxshareddictexpire)
 * [ngx.shared.DICT.flush_all](#ngxshareddictflush_all)
 * [ngx.shared.DICT.flush_expired](#ngxshareddictflush_expired)
 * [ngx.shared.DICT.get_keys](#ngxshareddictget_keys)
+* [ngx.shared.DICT.capacity](#ngxshareddictcapacity)
+* [ngx.shared.DICT.free_space](#ngxshareddictfree_space)
 * [ngx.socket.udp](#ngxsocketudp)
 * [udpsock:setpeername](#udpsocksetpeername)
 * [udpsock:send](#udpsocksend)
@@ -3391,7 +3409,7 @@ Core constants
    ngx.DECLINED (-5)
 ```
 
-Note that only three of these constants are utilized by the [Nginx API for Lua](#nginx-api-for-lua) (i.e., [ngx.exit](#ngxexit) accepts `NGX_OK`, `NGX_ERROR`, and `NGX_DECLINED` as input).
+Note that only three of these constants are utilized by the [Nginx API for Lua](#nginx-api-for-lua) (i.e., [ngx.exit](#ngxexit) accepts `ngx.OK`, `ngx.ERROR`, and `ngx.DECLINED` as input).
 
 ```lua
 
@@ -3449,6 +3467,7 @@ HTTP status constants
    value = ngx.HTTP_SEE_OTHER (303)
    value = ngx.HTTP_NOT_MODIFIED (304)
    value = ngx.HTTP_TEMPORARY_REDIRECT (307) (first added in the v0.9.20 release)
+   value = ngx.HTTP_PERMANENT_REDIRECT (308)
    value = ngx.HTTP_BAD_REQUEST (400)
    value = ngx.HTTP_UNAUTHORIZED (401)
    value = ngx.HTTP_PAYMENT_REQUIRED (402) (first added in the v0.9.20 release)
@@ -4105,7 +4124,7 @@ The same applies to assigning an empty table:
  ngx.header["X-My-Header"] = {};
 ```
 
-Setting `ngx.header.HEADER` after sending out response headers (either explicitly with [ngx.send_headers](#ngxsend_headers) or implicitly with [ngx.print](#ngxprint) and similar) will throw out a Lua exception.
+Setting `ngx.header.HEADER` after sending out response headers (either explicitly with [ngx.send_headers](#ngxsend_headers) or implicitly with [ngx.print](#ngxprint) and similar) will log an error message.
 
 Reading `ngx.header.HEADER` will return the value of the response header named `HEADER`.
 
@@ -4154,7 +4173,7 @@ For reading *request* headers, use the [ngx.req.get_headers](#ngxreqget_headers)
 
 ngx.resp.get_headers
 --------------------
-**syntax:** *headers = ngx.resp.get_headers(max_headers?, raw?)*
+**syntax:** *headers, err = ngx.resp.get_headers(max_headers?, raw?)*
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, balancer_by_lua&#42;*
 
@@ -4162,13 +4181,20 @@ Returns a Lua table holding all the current response headers for the current req
 
 ```lua
 
- local h = ngx.resp.get_headers()
+ local h, err = ngx.resp.get_headers()
+
+ if err == "truncated" then
+     -- one can choose to ignore or reject the current response here
+ end
+
  for k, v in pairs(h) do
      ...
  end
 ```
 
 This function has the same signature as [ngx.req.get_headers](#ngxreqget_headers) except getting response headers instead of request headers.
+
+Note that a maximum of 100 response headers are parsed by default (including those with the same name) and that additional response headers are silently discarded to guard against potential denial of service attacks. Since `v0.10.13`, when the limit is exceeded, it will return a second value which is the string `"truncated"`.
 
 This API was first introduced in the `v0.9.5` release.
 
@@ -4442,7 +4468,7 @@ See also [ngx.req.set_uri](#ngxreqset_uri).
 
 ngx.req.get_uri_args
 --------------------
-**syntax:** *args = ngx.req.get_uri_args(max_args?)*
+**syntax:** *args, err = ngx.req.get_uri_args(max_args?)*
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, balancer_by_lua&#42;*
 
@@ -4452,7 +4478,12 @@ Returns a Lua table holding all the current request URL query arguments.
 
  location = /test {
      content_by_lua_block {
-         local args = ngx.req.get_uri_args()
+         local args, err = ngx.req.get_uri_args()
+
+         if err == "truncated" then
+             -- one can choose to ignore or reject the current request here
+         end
+
          for key, val in pairs(args) do
              if type(val) == "table" then
                  ngx.say(key, ": ", table.concat(val, ", "))
@@ -4504,7 +4535,7 @@ Updating query arguments via the nginx variable `$args` (or `ngx.var.args` in Lu
 ```lua
 
  ngx.var.args = "a=3&b=42"
- local args = ngx.req.get_uri_args()
+ local args, err = ngx.req.get_uri_args()
 ```
 
 Here the `args` table will always look like
@@ -4516,20 +4547,23 @@ Here the `args` table will always look like
 
 regardless of the actual request query string.
 
-Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.
+Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks. Since `v0.10.13`, when the limit is exceeded, it will return a second value which is the string `"truncated"`.
 
 However, the optional `max_args` function argument can be used to override this limit:
 
 ```lua
 
- local args = ngx.req.get_uri_args(10)
+ local args, err = ngx.req.get_uri_args(10)
+ if err == "truncated" then
+     -- one can choose to ignore or reject the current request here
+ end
 ```
 
 This argument can be set to zero to remove the limit and to process all request arguments received:
 
 ```lua
 
- local args = ngx.req.get_uri_args(0)
+ local args, err = ngx.req.get_uri_args(0)
 ```
 
 Removing the `max_args` cap is strongly discouraged.
@@ -4550,6 +4584,11 @@ Returns a Lua table holding all the current request POST query arguments (of the
      content_by_lua_block {
          ngx.req.read_body()
          local args, err = ngx.req.get_post_args()
+
+         if err == "truncated" then
+             -- one can choose to ignore or reject the current request here
+         end
+
          if not args then
              ngx.say("failed to get post args: ", err)
              return
@@ -4618,20 +4657,23 @@ That is, they will take Lua boolean values `true`. However, they are different f
 
 Empty key arguments are discarded. `POST /test` with body `=hello&=world` will yield empty outputs for instance.
 
-Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks.
+Note that a maximum of 100 request arguments are parsed by default (including those with the same name) and that additional request arguments are silently discarded to guard against potential denial of service attacks. Since `v0.10.13`, when the limit is exceeded, it will return a second value which is the string `"truncated"`.
 
 However, the optional `max_args` function argument can be used to override this limit:
 
 ```lua
 
- local args = ngx.req.get_post_args(10)
+ local args, err = ngx.req.get_post_args(10)
+ if err == "truncated" then
+     -- one can choose to ignore or reject the current request here
+ end
 ```
 
 This argument can be set to zero to remove the limit and to process all request arguments received:
 
 ```lua
 
- local args = ngx.req.get_post_args(0)
+ local args, err = ngx.req.get_post_args(0)
 ```
 
 Removing the `max_args` cap is strongly discouraged.
@@ -4640,7 +4682,7 @@ Removing the `max_args` cap is strongly discouraged.
 
 ngx.req.get_headers
 -------------------
-**syntax:** *headers = ngx.req.get_headers(max_headers?, raw?)*
+**syntax:** *headers, err = ngx.req.get_headers(max_headers?, raw?)*
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;*
 
@@ -4648,7 +4690,12 @@ Returns a Lua table holding all the current request headers.
 
 ```lua
 
- local h = ngx.req.get_headers()
+ local h, err = ngx.req.get_headers()
+
+ if err == "truncated" then
+     -- one can choose to ignore or reject the current request here
+ end
+
  for k, v in pairs(h) do
      ...
  end
@@ -4679,20 +4726,24 @@ the value of `ngx.req.get_headers()["Foo"]` will be a Lua (array) table such as:
  {"foo", "bar", "baz"}
 ```
 
-Note that a maximum of 100 request headers are parsed by default (including those with the same name) and that additional request headers are silently discarded to guard against potential denial of service attacks.
+Note that a maximum of 100 request headers are parsed by default (including those with the same name) and that additional request headers are silently discarded to guard against potential denial of service attacks. Since `v0.10.13`, when the limit is exceeded, it will return a second value which is the string `"truncated"`.
 
 However, the optional `max_headers` function argument can be used to override this limit:
 
 ```lua
 
- local headers = ngx.req.get_headers(10)
+ local headers, err = ngx.req.get_headers(10)
+
+ if err == "truncated" then
+     -- one can choose to ignore or reject the current request here
+ end
 ```
 
 This argument can be set to zero to remove the limit and to process all request headers received:
 
 ```lua
 
- local headers = ngx.req.get_headers(0)
+ local headers, err = ngx.req.get_headers(0)
 ```
 
 Removing the `max_headers` cap is strongly discouraged.
@@ -5083,6 +5134,7 @@ The optional `status` parameter specifies the HTTP status code to be used. The f
 * `302` (default)
 * `303`
 * `307`
+* `308`
 
 It is `302` (`ngx.HTTP_MOVED_TEMPORARILY`) by default.
 
@@ -5316,7 +5368,7 @@ Number literals can be used directly as the argument, for instance,
  ngx.exit(501)
 ```
 
-Note that while this method accepts all [HTTP status constants](#http-status-constants) as input, it only accepts `NGX_OK` and `NGX_ERROR` of the [core constants](#core-constants).
+Note that while this method accepts all [HTTP status constants](#http-status-constants) as input, it only accepts `ngx.OK` and `ngx.ERROR` of the [core constants](#core-constants).
 
 Also note that this method call terminates the processing of the current request and that it is recommended that a coding style that combines this method call with the `return` statement, i.e., `return ngx.exit(...)` be used to reinforce the fact that the request processing is being terminated.
 
@@ -5469,13 +5521,13 @@ This method was first introduced in the `v0.3.1rc27` release.
 
 ngx.decode_args
 ---------------
-**syntax:** *table = ngx.decode_args(str, max_args?)*
+**syntax:** *table, err = ngx.decode_args(str, max_args?)*
 
 **context:** *set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
 
 Decodes a URI encoded query-string into a Lua table. This is the inverse function of [ngx.encode_args](#ngxencode_args).
 
-The optional `max_args` argument can be used to specify the maximum number of arguments parsed from the `str` argument. By default, a maximum of 100 request arguments are parsed (including those with the same name) and that additional URI arguments are silently discarded to guard against potential denial of service attacks.
+The optional `max_args` argument can be used to specify the maximum number of arguments parsed from the `str` argument. By default, a maximum of 100 request arguments are parsed (including those with the same name) and that additional URI arguments are silently discarded to guard against potential denial of service attacks. Since `v0.10.13`, when the limit is exceeded, it will return a second value which is the string `"truncated"`.
 
 This argument can be set to zero to remove the limit and to process all request arguments received:
 
@@ -6195,9 +6247,13 @@ The resulting object `dict` has the following methods:
 * [lpop](#ngxshareddictlpop)
 * [rpop](#ngxshareddictrpop)
 * [llen](#ngxshareddictllen)
+* [ttl](#ngxshareddictttl)
+* [expire](#ngxshareddictexpire)
 * [flush_all](#ngxshareddictflush_all)
 * [flush_expired](#ngxshareddictflush_expired)
 * [get_keys](#ngxshareddictget_keys)
+* [capacity](#ngxshareddictcapacity)
+* [free_space](#ngxshareddictfree_space)
 
 All these methods are *atomic* operations, that is, safe from concurrent accesses from multiple nginx worker processes for the same `lua_shared_dict` zone.
 
@@ -6431,9 +6487,11 @@ See also [ngx.shared.DICT](#ngxshareddict).
 
 ngx.shared.DICT.incr
 --------------------
-**syntax:** *newval, err, forcible? = ngx.shared.DICT:incr(key, value, init?)*
+**syntax:** *newval, err, forcible? = ngx.shared.DICT:incr(key, value, init?, init_ttl?)*
 
 **context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**optional requirement:** `resty.core.shdict` or `resty.core`
 
 Increments the (numerical) value for `key` in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) by the step value `value`. Returns the new resulting number if the operation is successfully completed or `nil` and an error message otherwise.
 
@@ -6443,6 +6501,25 @@ When the key does not exist or has already expired in the shared dictionary,
 1. if the `init` argument takes a number value, this method will create a new `key` with the value `init + value`.
 
 Like the [add](#ngxshareddictadd) method, it also overrides the (least recently used) unexpired items in the store when running out of storage in the shared memory zone.
+
+The optional `init_ttl` argument specifies expiration time (in seconds) of the value when it is initialized via the `init` argument. The time resolution is `0.001` seconds. If `init_ttl` takes the value `0` (which is the default), then the item will never expire. This argument cannot be provided without providing the `init` argument as well, and has no effect if the value already exists (e.g., if it was previously inserted via [set](#ngxshareddictset) or the likes).
+
+**Note:** Usage of the `init_ttl` argument requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library. Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local newval, err = cats:incr("black_cats", 1, 0, 0.1)
+
+ print(newval) -- 1
+
+ ngx.sleep(0.2)
+
+ local val, err = cats:get("black_cats")
+ print(val) -- nil
+```
 
 The `forcible` return value will always be `nil` when the `init` argument is not specified.
 
@@ -6455,6 +6532,8 @@ The `value` argument and `init` argument can be any valid Lua numbers, like nega
 This method was first introduced in the `v0.3.1rc22` release.
 
 The optional `init` parameter was first added in the `v0.10.6` release.
+
+The optional `init_ttl` parameter was introduced in the `v0.10.12rc2` release.
 
 See also [ngx.shared.DICT](#ngxshareddict).
 
@@ -6540,6 +6619,82 @@ See also [ngx.shared.DICT](#ngxshareddict).
 
 [Back to TOC](#nginx-api-for-lua)
 
+ngx.shared.DICT.ttl
+-------------------
+**syntax:** *ttl, err = ngx.shared.DICT:ttl(key)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Retrieves the remaining TTL (time-to-live in seconds) of a key-value pair in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict). Returns the TTL as a number if the operation is successfully completed or `nil` and an error message otherwise.
+
+If the key does not exist (or has already expired), this method will return `nil` and the error string `"not found"`.
+
+The TTL is originally determined by the `exptime` argument of the [set](#ngxshareddictset), [add](#ngxshareddictadd), [replace](#ngxshareddictreplace) (and the likes) methods. It has a time resolution of `0.001` seconds. A value of `0` means that the item will never expire.
+
+Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local succ, err = cats:set("Marry", "a nice cat", 0.5)
+
+ ngx.sleep(0.2)
+
+ local ttl, err = cats:ttl("Marry")
+ ngx.say(ttl) -- 0.3
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.expire
+----------------------
+**syntax:** *success, err = ngx.shared.DICT:expire(key, exptime)*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Updates the `exptime` (in second) of a key-value pair in the shm-based dictionary [ngx.shared.DICT](#ngxshareddict). Returns a boolean indicating success if the operation completes or `nil` and an error message otherwise.
+
+If the key does not exist, this method will return `nil` and the error string `"not found"`.
+
+The `exptime` argument has a resolution of `0.001` seconds. If `exptime` is `0`, then the item will never expire.
+
+Example:
+
+```lua
+
+ require "resty.core"
+
+ local cats = ngx.shared.cats
+ local succ, err = cats:set("Marry", "a nice cat", 0.1)
+
+ succ, err = cats:expire("Marry", 0.5)
+
+ ngx.sleep(0.2)
+
+ local val, err = cats:get("Marry")
+ ngx.say(val) -- "a nice cat"
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
 ngx.shared.DICT.flush_all
 -------------------------
 **syntax:** *ngx.shared.DICT:flush_all()*
@@ -6583,6 +6738,79 @@ By default, only the first 1024 keys (if any) are returned. When the `<max_count
 **CAUTION** Avoid calling this method on dictionaries with a very large number of keys as it may lock the dictionary for significant amount of time and block Nginx worker processes trying to access the dictionary.
 
 This feature was first introduced in the `v0.7.3` release.
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.capacity
+------------------------
+**syntax:** *capacity_bytes = ngx.shared.DICT:capacity()*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Retrieves the capacity in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict) declared with
+the [lua_shared_dict](#lua_shared_dict) directive.
+
+Example:
+
+```lua
+
+ require "resty.core.shdict"
+
+ local cats = ngx.shared.cats
+ local capacity_bytes = cats:capacity()
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+This feature requires at least nginx core version `0.7.3`.
+
+See also [ngx.shared.DICT](#ngxshareddict).
+
+[Back to TOC](#nginx-api-for-lua)
+
+ngx.shared.DICT.free_space
+--------------------------
+**syntax:** *free_page_bytes = ngx.shared.DICT:free_space()*
+
+**context:** *init_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
+
+**requires:** `resty.core.shdict` or `resty.core`
+
+Retrieves the free page size in bytes for the shm-based dictionary [ngx.shared.DICT](#ngxshareddict).
+
+**Note:** The memory for ngx.shared.DICT is allocated via the nginx slab allocator which has each slot for
+data size ranges like \~8, 9\~16, 17\~32, ..., 1025\~2048, 2048\~ bytes. And pages are assigned to a slot if there
+is no room in already assigned pages for the slot.
+
+So even if the return value of the `free_space` method is zero, there may be room in already assigned pages, so
+you may successfully set a new key value pair to the shared dict without getting `true` for `forcible` or
+non nil `err` from the `ngx.shared.DICT.set`.
+
+On the other hand, if already assigned pages for a slot are full and a new key value pair is added to the
+slot and there is no free page, you may get `true` for `forcible` or non nil `err` from the
+`ngx.shared.DICT.set` method.
+
+Example:
+
+```lua
+
+ require "resty.core.shdict"
+
+ local cats = ngx.shared.cats
+ local free_page_bytes = cats:free_space()
+```
+
+This feature was first introduced in the `v0.10.11` release.
+
+**Note:** This method requires the `resty.core.shdict` or `resty.core` modules from the [lua-resty-core](https://github.com/openresty/lua-resty-core) library.
+
+This feature requires at least nginx core version `1.11.7`.
+
+See also [ngx.shared.DICT](#ngxshareddict).
 
 [Back to TOC](#nginx-api-for-lua)
 
@@ -7670,7 +7898,7 @@ timers" here mean timers that have not yet been expired and "running
 timers" are those whose user callbacks are currently running.
 
 The maximal number of pending timers allowed in an Nginx
-worker is constrolled by the [lua_max_pending_timers](#lua_max_pending_timers)
+worker is controlled by the [lua_max_pending_timers](#lua_max_pending_timers)
 directive. The maximal number of running timers is controlled by the
 [lua_max_running_timers](#lua_max_running_timers) directive.
 
@@ -7966,7 +8194,7 @@ ndk.set_var.DIRECTIVE
 
 **context:** *init_worker_by_lua&#42;, set_by_lua&#42;, rewrite_by_lua&#42;, access_by_lua&#42;, content_by_lua&#42;, header_filter_by_lua&#42;, body_filter_by_lua&#42;, log_by_lua&#42;, ngx.timer.&#42;, balancer_by_lua&#42;, ssl_certificate_by_lua&#42;, ssl_session_fetch_by_lua&#42;, ssl_session_store_by_lua&#42;*
 
-This mechanism allows calling other nginx C modules' directives that are implemented by [Nginx Devel Kit](https://github.com/simpl/ngx_devel_kit) (NDK)'s set_var submodule's `ndk_set_var_value`.
+This mechanism allows calling other nginx C modules' directives that are implemented by [Nginx Devel Kit](https://github.com/simplresty/ngx_devel_kit) (NDK)'s set_var submodule's `ndk_set_var_value`.
 
 For example, the following [set-misc-nginx-module](http://github.com/openresty/set-misc-nginx-module) directives can be invoked this way:
 
@@ -7997,7 +8225,7 @@ Similarly, the following directives provided by [encrypted-session-nginx-module]
 * [set_encrypt_session](http://github.com/openresty/encrypted-session-nginx-module#set_encrypt_session)
 * [set_decrypt_session](http://github.com/openresty/encrypted-session-nginx-module#set_decrypt_session)
 
-This feature requires the [ngx_devel_kit](https://github.com/simpl/ngx_devel_kit) module.
+This feature requires the [ngx_devel_kit](https://github.com/simplresty/ngx_devel_kit) module.
 
 [Back to TOC](#nginx-api-for-lua)
 
@@ -8102,4 +8330,3 @@ Special PCRE Sequences
 ----------------------
 
 This section has been renamed to [Special Escaping Sequences](#special-escaping-sequences).
-

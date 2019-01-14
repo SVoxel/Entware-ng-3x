@@ -190,6 +190,10 @@ static ngx_conf_enum_t ngx_http_fancyindex_sort_criteria[] = {
  */
 #define ngx_sizeof_ssz(_s)  (sizeof(_s) - 1)
 
+/**
+ * Compute the length of a statically allocated array
+ */
+#define DIM(x) (sizeof(x)/sizeof(*(x)))
 
 /**
  * Copy a static zero-terminated string. Useful to output template
@@ -552,15 +556,19 @@ make_content_buf(
 
     off_t        length;
     size_t       len, root, copy, allocated;
-    u_char      *filename, *last, scale;
+    int64_t      multiplier;
+    u_char      *filename, *last;
     ngx_tm_t     tm;
     ngx_array_t  entries;
     ngx_time_t  *tp;
-    ngx_uint_t   i;
-    ngx_int_t    size;
+    ngx_uint_t   i, j;
     ngx_str_t    path;
     ngx_dir_t    dir;
     ngx_buf_t   *b;
+
+    static const char    *sizes[]  = { "EiB", "PiB", "TiB", "GiB", "MiB", "KiB", "B" };
+    static const int64_t  exbibyte = 1024LL * 1024LL * 1024LL *
+                                     1024LL * 1024LL * 1024LL;
 
     /*
      * NGX_DIR_MASK_LEN is lesser than NGX_HTTP_FANCYINDEX_PREALLOCATE
@@ -764,7 +772,7 @@ make_content_buf(
          *     <td>size</td><td>date</td>
          *   </tr>
          */
-        len += ngx_sizeof_ssz("<tr><td><a href=\"")
+        len += ngx_sizeof_ssz("<tr><td class=\"link\"><a href=\"")
             + entry[i].name.len + entry[i].escape /* Escaped URL */
             + ngx_sizeof_ssz("?C=x&amp;O=y") /* URL sorting arguments */
             + ngx_sizeof_ssz("\" title=\"")
@@ -772,9 +780,9 @@ make_content_buf(
             + ngx_sizeof_ssz("\">")
             + entry[i].name.len + entry[i].utf_len
             + alcf->name_length + ngx_sizeof_ssz("&gt;")
-            + ngx_sizeof_ssz("</a></td><td>")
+            + ngx_sizeof_ssz("</a></td><td class=\"size\">")
             + 20 /* File size */
-            + ngx_sizeof_ssz("</td><td>")    /* Date prefix */
+            + ngx_sizeof_ssz("</td><td class=\"date\">")    /* Date prefix */
             + ngx_sizeof_ssz("</td></tr>\n") /* Date suffix */
             + 2 /* CR LF */
             ;
@@ -896,7 +904,7 @@ make_content_buf(
     if (r->uri.len > 1) {
         b->last = ngx_cpymem_ssz(b->last,
                                  "<tr>"
-                                 "<td><a href=\"../");
+                                 "<td class=\"link\"><a href=\"../");
         if (*sort_url_args) {
             b->last = ngx_cpymem(b->last,
                                  sort_url_args,
@@ -904,14 +912,14 @@ make_content_buf(
         }
         b->last = ngx_cpymem_ssz(b->last,
                                  "\">Parent directory/</a></td>"
-                                 "<td>-</td>"
-                                 "<td>-</td>"
+                                 "<td class=\"size\">-</td>"
+                                 "<td class=\"date\">-</td>"
                                  "</tr>");
     }
 
     /* Entries for directories and files */
     for (i = 0; i < entries.nelts; i++) {
-        b->last = ngx_cpymem_ssz(b->last, "<tr><td><a href=\"");
+        b->last = ngx_cpymem_ssz(b->last, "<tr><td class=\"link\"><a href=\"");
 
         if (entry[i].escape) {
             ngx_fancyindex_escape_uri(b->last,
@@ -959,7 +967,7 @@ make_content_buf(
         }
 
         if (len > alcf->name_length) {
-            b->last = ngx_cpymem_ssz(last, "..&gt;</a></td><td>");
+            b->last = ngx_cpymem_ssz(last, "..&gt;</a></td><td class=\"size\">");
 
         } else {
             if (entry[i].dir && alcf->name_length - len > 0) {
@@ -967,7 +975,7 @@ make_content_buf(
                 len++;
             }
 
-            b->last = ngx_cpymem_ssz(b->last, "</a></td><td>");
+            b->last = ngx_cpymem_ssz(b->last, "</a></td><td class=\"size\">");
         }
 
         if (alcf->exact_size) {
@@ -982,46 +990,22 @@ make_content_buf(
                 *b->last++ = '-';
             } else {
                 length = entry[i].size;
+                multiplier = exbibyte;
 
-                if (length > 1024 * 1024 * 1024 - 1) {
-                    size = (ngx_int_t) (length / (1024 * 1024 * 1024));
-                    if ((length % (1024 * 1024 * 1024))
-                                                > (1024 * 1024 * 1024 / 2 - 1))
-                    {
-                        size++;
-                    }
-                    scale = 'G';
+                for (j = 0; j < DIM(sizes) - 1 && length < multiplier; j++)
+                    multiplier /= 1024;
 
-                } else if (length > 1024 * 1024 - 1) {
-                    size = (ngx_int_t) (length / (1024 * 1024));
-                    if ((length % (1024 * 1024)) > (1024 * 1024 / 2 - 1)) {
-                        size++;
-                    }
-                    scale = 'M';
-
-                } else if (length > 9999) {
-                    size = (ngx_int_t) (length / 1024);
-                    if (length % 1024 > 511) {
-                        size++;
-                    }
-                    scale = 'K';
-
-                } else {
-                    size = (ngx_int_t) length;
-                    scale = '\0';
-                }
-
-                if (scale) {
-                    b->last = ngx_sprintf(b->last, "%6i%c", size, scale);
-
-                } else {
-                    b->last = ngx_sprintf(b->last, " %6i", size);
-                }
+                /* If we are showing the filesize in bytes, do not show a decimal */
+                if (j == DIM(sizes) - 1)
+                    b->last = ngx_sprintf(b->last, "%O %s", length, sizes[j]);
+                else
+                    b->last = ngx_sprintf(b->last, "%.1f %s", 
+                                          (float) length / multiplier, sizes[j]);
             }
         }
 
         ngx_gmtime(entry[i].mtime + tp->gmtoff * 60 * alcf->localtime, &tm);
-        b->last = ngx_cpymem_ssz(b->last, "</td><td>");
+        b->last = ngx_cpymem_ssz(b->last, "</td><td class=\"date\">");
         b->last = ngx_fancyindex_timefmt(b->last, &alcf->time_format, &tm);
         b->last = ngx_cpymem_ssz(b->last, "</td></tr>");
 
@@ -1245,7 +1229,7 @@ ngx_http_fancyindex_cmp_entries_size_desc(const void *one, const void *two)
     ngx_http_fancyindex_entry_t *first = (ngx_http_fancyindex_entry_t *) one;
     ngx_http_fancyindex_entry_t *second = (ngx_http_fancyindex_entry_t *) two;
 
-    return (int) (second->size - first->size);
+    return (first->size < second->size) - (first->size > second->size);
 }
 
 
@@ -1275,7 +1259,7 @@ ngx_http_fancyindex_cmp_entries_size_asc(const void *one, const void *two)
     ngx_http_fancyindex_entry_t *first = (ngx_http_fancyindex_entry_t *) one;
     ngx_http_fancyindex_entry_t *second = (ngx_http_fancyindex_entry_t *) two;
 
-    return (int) (first->size - second->size);
+    return (first->size > second->size) - (first->size < second->size);
 }
 
 
