@@ -9,17 +9,15 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openvpn
 
-PKG_VERSION:=2.4.6
-PKG_RELEASE:=2
+PKG_VERSION:=2.4.8
+PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=\
 	https://build.openvpn.net/downloads/releases/ \
 	https://swupdate.openvpn.net/community/releases/
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-# PKG_HASH:=43c0a363a332350f620d1cd93bb431e082bedbc93d4fb872f758650d53c1d29e
-PKG_MD5SUM:=3a1f3f63bdaede443b4df49957df9405
+PKG_HASH:=fb8ca66bb7807fff595fbdf2a0afd085c02a6aa47715c9aa3171002f9f1a3f91
 
-PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSION)
 PKG_MAINTAINER:=Felix Fietkau <nbd@nbd.name>
 
 PKG_INSTALL:=1
@@ -74,8 +72,8 @@ CONFIGURE_VARS += \
 	IPROUTE=/opt/sbin/ip \
 	NETSTAT=/opt/bin/netstat
 
-#TARGET_CFLAGS += -ffunction-sections -fdata-sections
-#TARGET_LDFLAGS += -Wl,--gc-sections
+TARGET_CFLAGS += -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += -Wl,--gc-sections
 
 define Build/Configure
 	$(call Build/Configure/Default, \
@@ -87,27 +85,31 @@ define Build/Configure
 		--disable-pkcs11 \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_LZO),--enable,--disable)-lzo \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_LZ4),--enable,--disable)-lz4 \
-		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_X509_ALT_USERNAME),enable,disable-x509-alt-username)-ssl \
+		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_X509_ALT_USERNAME),--enable,--disable)-x509-alt-username \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_SERVER),--enable,--disable)-server \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_MANAGEMENT),--enable,--disable)-management \
-		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_SOCKS),--enable,--disable)-socks \
-		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_HTTP),--enable,--disable)-http-proxy \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_FRAGMENT),--enable,--disable)-fragment \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_MULTIHOME),--enable,--disable)-multihome \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_IPROUTE2),--enable,--disable)-iproute2 \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_DEF_AUTH),--enable,--disable)-def-auth \
 		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_PF),--enable,--disable)-pf \
-		$(if $(CONFIG_OPENVPN_NOSSL),--disable-ssl --disable-crypto,--enable-ssl --enable-crypto) \
+		$(if $(CONFIG_OPENVPN_$(BUILD_VARIANT)_ENABLE_PORT_SHARE),--enable,--disable)-port-share \
+		$(if $(CONFIG_OPENVPN_NOSSL),--disable-crypto,--enable-crypto) \
 		$(if $(CONFIG_OPENVPN_OPENSSL),--with-crypto-library=openssl) \
 		$(if $(CONFIG_OPENVPN_MBEDTLS),--with-crypto-library=mbedtls) \
 	)
+endef
+
+define Package/openvpn-$(BUILD_VARIANT)/conffiles
+/opt/etc/openvpn
 endef
 
 define Package/openvpn-$(BUILD_VARIANT)/install
 	$(INSTALL_DIR) \
 		$(1)/opt/sbin \
 		$(1)/opt/etc/init.d \
-		$(1)/opt/etc/openvpn
+		$(1)/opt/etc/openvpn \
+		$(1)/opt/lib/upgrade/keep.d
 
 	$(INSTALL_BIN) \
 		$(PKG_INSTALL_DIR)/opt/sbin/openvpn \
@@ -116,6 +118,10 @@ define Package/openvpn-$(BUILD_VARIANT)/install
 	$(INSTALL_BIN) \
 		files/S20openvpn \
 		$(1)/opt/etc/init.d
+
+	$(INSTALL_DATA) \
+		files/openvpn.upgrade \
+		$(1)/opt/lib/upgrade/keep.d/openvpn
 endef
 
 $(eval $(call BuildPackage,openvpn-openssl))

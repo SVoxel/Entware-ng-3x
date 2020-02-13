@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=curl
-PKG_VERSION:=7.63.0
+PKG_VERSION:=7.68.0
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
@@ -16,7 +16,7 @@ PKG_SOURCE_URL:=https://dl.uxnr.de/mirror/curl/ \
 	https://curl.mirror.anstey.ca/ \
 	https://curl.askapache.com/download/ \
 	https://curl.haxx.se/download/
-PKG_HASH:=9600234c794bfb8a0d3f138e9294d60a20e7a5f10e35ece8cf518e2112d968c4
+PKG_HASH:=b724240722276a27f6e770b952121a3afd097129d8c9fe18e6272dc34192035a
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=COPYING
@@ -91,6 +91,7 @@ define Package/libcurl
   DEPENDS += +LIBCURL_SSH2:libssh2 +LIBCURL_NGHTTP2:libnghttp2 +ca-bundle
   TITLE:=A client-side URL transfer library
   MENU:=1
+  ABI_VERSION:=4
 endef
 
 define Package/libcurl/config
@@ -117,7 +118,7 @@ CONFIGURE_ARGS += \
 	\
 	$(call autoconf_bool,CONFIG_IPV6,ipv6) \
 	\
-	$(if $(CONFIG_LIBCURL_WOLFSSL),--with-cyassl="$(STAGING_DIR)/opt",--without-cyassl) \
+	$(if $(CONFIG_LIBCURL_WOLFSSL),--with-wolfssl="$(STAGING_DIR)/opt",--without-wolfssl) \
 	$(if $(CONFIG_LIBCURL_GNUTLS),--with-gnutls="$(STAGING_DIR)/opt",--without-gnutls) \
 	$(if $(CONFIG_LIBCURL_OPENSSL),--with-ssl="$(STAGING_DIR)/opt",--without-ssl) \
 	$(if $(CONFIG_LIBCURL_MBEDTLS),--with-mbedtls="$(STAGING_DIR)/opt",--without-mbedtls) \

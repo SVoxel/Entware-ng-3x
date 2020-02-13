@@ -1,0 +1,24 @@
+diff -Nuar a/libatomic/Makefile.am b/libatomic/Makefile.am
+--- a/libatomic/Makefile.am	2017-01-17 12:38:48.048122000 +0300
++++ b/libatomic/Makefile.am	2020-01-30 12:52:45.083738000 +0300
+@@ -123,7 +123,7 @@
+ ## On a target-specific basis, include alternates to be selected by IFUNC.
+ if HAVE_IFUNC
+ if ARCH_ARM_LINUX
+-IFUNC_OPTIONS	     = -march=armv7-a -DHAVE_KERNEL64
++IFUNC_OPTIONS	     = -march=armv7-a+fp -DHAVE_KERNEL64
+ libatomic_la_LIBADD += $(foreach s,$(SIZES),$(addsuffix _$(s)_1_.lo,$(SIZEOBJS)))
+ libatomic_la_LIBADD += $(addsuffix _8_2_.lo,$(SIZEOBJS))
+ endif
+diff -Nuar a/libatomic/Makefile.in b/libatomic/Makefile.in
+--- a/libatomic/Makefile.in	2018-12-06 12:58:51.296257500 +0300
++++ b/libatomic/Makefile.in	2020-01-30 12:52:57.455514400 +0300
+@@ -346,7 +346,7 @@
+ libatomic_la_LIBADD = $(foreach s,$(SIZES),$(addsuffix \
+ 	_$(s)_.lo,$(SIZEOBJS))) $(am__append_1) $(am__append_2) \
+ 	$(am__append_3)
+-@ARCH_ARM_LINUX_TRUE@@HAVE_IFUNC_TRUE@IFUNC_OPTIONS = -march=armv7-a -DHAVE_KERNEL64
++@ARCH_ARM_LINUX_TRUE@@HAVE_IFUNC_TRUE@IFUNC_OPTIONS = -march=armv7-a+fp -DHAVE_KERNEL64
+ @ARCH_I386_TRUE@@HAVE_IFUNC_TRUE@IFUNC_OPTIONS = -march=i586
+ @ARCH_X86_64_TRUE@@HAVE_IFUNC_TRUE@IFUNC_OPTIONS = -mcx16
+ libatomic_convenience_la_SOURCES = $(libatomic_la_SOURCES)

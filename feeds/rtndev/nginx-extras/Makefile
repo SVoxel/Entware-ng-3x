@@ -1,24 +1,25 @@
 #
-# Copyright (C) 2011-2018 Entware
+# Copyright (C) 2011-2019 Entware
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
-# Extract debian/modules from http://ftp.debian.org/debian/pool/main/n/nginx/nginx_1.13.12-1.debian.tar.xz
+# Extract debian/modules from http://ftp.debian.org/debian/pool/main/n/nginx/nginx_1.16.1-2.debian.tar.xz
 # to src folder.
 # Manually added hiredis/* to modules/nchan
+# http-lua 0.10.13 version frozen, the newer versions requires LuaJIT support
 # Debian differences: threads, geoip, http_upstream_zone, stream_upstream_zone
 # http_perl modules are turned off
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=nginx-extras
-PKG_VERSION:=1.15.8
+PKG_VERSION:=1.17.7
 PKG_RELEASE:=1
 
 PKG_SOURCE:=nginx-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://nginx.org/download
-PKG_HASH:=a8bdafbca87eb99813ae4fcac1ad0875bf725ce19eb265d28268c309b2b40787
+PKG_HASH:=b62756842807e5693b794e5d0ae289bd8ae5b098e66538b2a91eb80f25c591ff
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/nginx-$(PKG_VERSION)
 
@@ -55,10 +56,14 @@ define Build/Patch
 endef
 
 TARGET_CFLAGS += \
-	-I$(STAGING_DIR)/opt/include/libxml2 -Wno-error=parentheses
+	-I$(STAGING_DIR)/opt/include/libxml2 -Wno-error=parentheses -Wno-error=maybe-uninitialized
 
-ifeq ($(CONFIG_GCC_USE_VERSION_7_3_0),y)
+ifeq ($(or $(CONFIG_GCC_USE_VERSION_7),$(CONFIG_GCC_USE_VERSION_8),$(CONFIG_GCC_USE_VERSION_9)),y)
 TARGET_CFLAGS += -Wno-error=implicit-fallthrough
+endif
+
+ifeq ($(or $(CONFIG_GCC_USE_VERSION_8),$(CONFIG_GCC_USE_VERSION_9)),y)
+TARGET_CFLAGS += -Wno-error=cast-function-type
 endif
 
 TARGET_LDFLAGS += \
