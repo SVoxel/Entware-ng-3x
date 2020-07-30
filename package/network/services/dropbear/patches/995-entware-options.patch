@@ -1,0 +1,71 @@
+diff -Nuar a/default_options.h b/default_options.h
+--- a/default_options.h	2020-06-26 16:45:59.000000000 +0300
++++ b/default_options.h	2020-07-29 17:58:18.631184700 +0300
+@@ -19,10 +19,10 @@
+ #define DROPBEAR_DEFADDRESS ""
+ 
+ /* Default hostkey paths - these can be specified on the command line */
+-#define DSS_PRIV_FILENAME "/etc/dropbear/dropbear_dss_host_key"
+-#define RSA_PRIV_FILENAME "/etc/dropbear/dropbear_rsa_host_key"
+-#define ECDSA_PRIV_FILENAME "/etc/dropbear/dropbear_ecdsa_host_key"
+-#define ED25519_PRIV_FILENAME "/etc/dropbear/dropbear_ed25519_host_key"
++#define DSS_PRIV_FILENAME "/opt/etc/dropbear/dropbear_dss_host_key"
++#define RSA_PRIV_FILENAME "/opt/etc/dropbear/dropbear_rsa_host_key"
++#define ECDSA_PRIV_FILENAME "/opt/etc/dropbear/dropbear_ecdsa_host_key"
++#define ED25519_PRIV_FILENAME "/opt/etc/dropbear/dropbear_ed25519_host_key"
+ 
+ /* Set NON_INETD_MODE if you require daemon functionality (ie Dropbear listens
+  * on chosen ports and keeps accepting connections. This is the default.
+@@ -189,7 +189,7 @@
+ 
+ /* Whether to print the message of the day (MOTD). */
+ #define DO_MOTD 1
+-#define MOTD_FILENAME "/etc/motd"
++#define MOTD_FILENAME "/opt/etc/motd"
+ 
+ /* Authentication Types - at least one required.
+    RFC Draft requires pubkey auth, and recommends password */
+@@ -241,7 +241,7 @@
+ 
+ /* Set this to use PRNGD or EGD instead of /dev/urandom */
+ #define DROPBEAR_USE_PRNGD 0
+-#define DROPBEAR_PRNGD_SOCKET "/var/run/dropbear-rng"
++#define DROPBEAR_PRNGD_SOCKET "/opt/var/run/dropbear-rng"
+ 
+ /* Specify the number of clients we will allow to be connected but
+  * not yet authenticated. After this limit, connections are rejected */
+@@ -258,22 +258,22 @@
+ 
+ /* The default file to store the daemon's process ID, for shutdown
+    scripts etc. This can be overridden with the -P flag */
+-#define DROPBEAR_PIDFILE "/var/run/dropbear.pid"
++#define DROPBEAR_PIDFILE "/opt/var/run/dropbear.pid"
+ 
+ /* The command to invoke for xauth when using X11 forwarding.
+  * "-q" for quiet */
+-#define XAUTH_COMMAND "/usr/bin/xauth -q"
++#define XAUTH_COMMAND "/opt/bin/xauth -q"
+ 
+ 
+ /* if you want to enable running an sftp server (such as the one included with
+  * OpenSSH), set the path below and set DROPBEAR_SFTPSERVER. 
+  * The sftp-server program is not provided by Dropbear itself */
+ #define DROPBEAR_SFTPSERVER 1
+-#define SFTPSERVER_PATH "/usr/libexec/sftp-server"
++#define SFTPSERVER_PATH "/opt/libexec/sftp-server"
+ 
+ /* This is used by the scp binary when used as a client binary. If you're
+  * not using the Dropbear client, you'll need to change it */
+-#define DROPBEAR_PATH_SSH_PROGRAM "/usr/bin/dbclient"
++#define DROPBEAR_PATH_SSH_PROGRAM "/opt/bin/dbclient"
+ 
+ /* Whether to log commands executed by a client. This only logs the 
+  * (single) command sent to the server, not what a user did in a 
+@@ -309,6 +309,6 @@
+ #define DEFAULT_IDLE_TIMEOUT 0
+ 
+ /* The default path. This will often get replaced by the shell */
+-#define DEFAULT_PATH "/usr/bin:/bin"
++#define DEFAULT_PATH "/opt/bin:/opt/sbin:/usr/bin:/bin"
+ 
+ #endif /* DROPBEAR_DEFAULT_OPTIONS_H_ */
