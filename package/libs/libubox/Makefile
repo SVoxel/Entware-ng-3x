@@ -5,9 +5,10 @@ PKG_RELEASE=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL=$(PROJECT_GIT)/project/libubox.git
-PKG_MIRROR_HASH:=cb941cd33f43b38ef1a1f2b4fd212e0bb21c100dcdd2ab1976f8cc2071566d32
-PKG_SOURCE_DATE:=2020-07-11
-PKG_SOURCE_VERSION:=f4e9bf73ac5c0ee6b8f240e2a2100e70ca56d705
+PKG_MIRROR_HASH:=042398d1295ac892e09c6d2e8f68861c6f859fc6752e809a114f451834e7a05e
+PKG_SOURCE_DATE:=2021-03-02
+PKG_SOURCE_VERSION:=2e52c7e9a90ab7ba1cf9d2986d1505ca5d184698
+PKG_ABI_VERSION:=$(call abi_version_str,$(PKG_SOURCE_DATE))
 CMAKE_INSTALL:=1
 
 PKG_LICENSE:=ISC
@@ -27,7 +28,7 @@ define Package/libubox
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=Basic utility library
-  ABI_VERSION:=20191228
+  ABI_VERSION:=$(PKG_ABI_VERSION)
   DEPENDS:=
 endef
 
@@ -35,6 +36,7 @@ define Package/libblobmsg-json
   SECTION:=libs
   CATEGORY:=Libraries
   TITLE:=blobmsg <-> json conversion library
+  ABI_VERSION:=$(PKG_ABI_VERSION)
   DEPENDS:=+libjson-c +libubox
 endef
 
@@ -53,6 +55,7 @@ define Package/libjson-script
   SECTION:=utils
   CATEGORY:=Utilities
   DEPENDS:=+libubox
+  ABI_VERSION:=$(PKG_ABI_VERSION)
   TITLE:=Minimalistic JSON based scripting engine
 endef
 

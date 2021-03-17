@@ -4,17 +4,17 @@
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
-# Entware specific: column, ionice and fsfreeze packages added, add swapon/swapoff binaries
+# Entware specific: column, ionice, fallocate and fsfreeze packages added, add swapon/swapoff binaries
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=util-linux
-PKG_VERSION:=2.35.2
-PKG_RELEASE:=1
+PKG_VERSION:=2.36.2
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
-PKG_SOURCE_URL:=@KERNEL/linux/utils/$(PKG_NAME)/v2.35
-PKG_HASH:=21b7431e82f6bcd9441a01beeec3d57ed33ee948f8a5b41da577073c372eb58a
+PKG_SOURCE_URL:=@KERNEL/linux/utils/$(PKG_NAME)/v2.36
+PKG_HASH:=f7516ba9d8689343594356f0e5e1a5f0da34adfbc89023437735872bb5024c5f
 PKG_CPE_ID:=cpe:/a:kernel:util-linux
 
 PKG_LICENSE:=GPL-2.0
@@ -60,7 +60,7 @@ endef
 
 define Package/libfdisk
 $(call Package/util-linux/Default)
-  DEPENDS:=+libuuid +libblkid +librt
+  DEPENDS:=+libuuid +libblkid
   TITLE:=partition manipulating library
   SECTION:=libs
   CATEGORY:=Libraries
@@ -73,7 +73,7 @@ endef
 
 define Package/libmount
 $(call Package/util-linux/Default)
-  DEPENDS:=+libblkid +librt
+  DEPENDS:=+libblkid
   TITLE:=mount library
   SECTION:=libs
   CATEGORY:=Libraries
@@ -125,9 +125,9 @@ endef
 
 define Package/blkdiscard
 $(call Package/util-linux/Default)
-  DEPENDS:=+librt
   TITLE:=discard sectors on a device
   SUBMENU=Disc
+  DEPENDS:= +libblkid
 endef
 
 define Package/blkdiscard/description
@@ -211,6 +211,16 @@ define Package/eject/description
   or ZIP disk) to be ejected under software control.
 endef
 
+define Package/fallocate
+$(call Package/util-linux/Default)
+  TITLE:=preallocate or deallocate space to a file
+  SUBMENU=Filesystem
+endef
+
+define Package/fallocate/description
+  fallocate is used to manipulate the allocated disk space for a file
+endef
+
 define Package/fdisk
 $(call Package/util-linux/Default)
   TITLE:=manipulate disk partition table
@@ -237,7 +247,6 @@ endef
 define Package/flock
 $(call Package/util-linux/Default)
   TITLE:=manage locks from shell scripts
-  DEPENDS:= +librt
 endef
 
 define Package/flock/description
@@ -275,6 +284,17 @@ endef
 define Package/getopt/description
  getopt is used to break up (parse) options in command lines for easy parsing
  by shell procedures, and to check for legal options
+endef
+
+define Package/hardlink
+$(call Package/util-linux/Default)
+  TITLE:=consolidate duplicate files using hardlinks
+  DEPENDS:=+libpcre2
+  SUBMENU:=Filesystem
+endef
+
+define Package/hardlink/description
+ Consolidate duplicate files using hardlinks.
 endef
 
 define Package/hwclock
@@ -430,7 +450,6 @@ endef
 define Package/script-utils
 $(call Package/util-linux/Default)
   TITLE:=make and replay typescript of terminal session
-  DEPENDS:= +librt
   SUBMENU=Terminal
 endef
 
@@ -485,7 +504,7 @@ endef
 define Package/uuidd
 $(call Package/util-linux/Default)
   TITLE:=UUID generation daemon
-  DEPENDS:= +libuuid +librt
+  DEPENDS:= +libuuid
 endef
 
 define Package/uuidd/description
@@ -545,11 +564,18 @@ CONFIGURE_ARGS += \
 	--disable-use-tty-group		\
 	--disable-rpath			\
 	--disable-tls			\
+	--disable-su			\
 	--disable-sulogin		\
 	--disable-makeinstall-chown	\
+	--disable-login 		\
+	--disable-nologin		\
+	--disable-lslogins		\
+	--disable-runuser		\
+	--disable-chfn-chsh		\
 	--without-python		\
 	--without-udev			\
 	--without-readline		\
+	--without-libmagic		\
 	--with-ncursesw
 
 TARGET_CFLAGS += $(FPIC) -std=gnu99
@@ -557,10 +583,20 @@ TARGET_CFLAGS += $(FPIC) -std=gnu99
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/opt/lib/pkgconfig
 	$(CP) $(PKG_INSTALL_DIR)/opt/lib/pkgconfig/blkid.pc $(1)/opt/lib/pkgconfig
+	$(SED) 's,/opt/include,$$$${prefix}/include,g' $(1)/opt/lib/pkgconfig/blkid.pc
+	$(SED) 's,/opt/lib,$$$${exec_prefix}/lib,g' $(1)/opt/lib/pkgconfig/blkid.pc
 	$(CP) $(PKG_INSTALL_DIR)/opt/lib/pkgconfig/fdisk.pc $(1)/opt/lib/pkgconfig
+	$(SED) 's,/opt/include,$$$${prefix}/include,g' $(1)/opt/lib/pkgconfig/fdisk.pc
+	$(SED) 's,/opt/lib,$$$${exec_prefix}/lib,g' $(1)/opt/lib/pkgconfig/fdisk.pc
 	$(CP) $(PKG_INSTALL_DIR)/opt/lib/pkgconfig/mount.pc $(1)/opt/lib/pkgconfig
+	$(SED) 's,/opt/include,$$$${prefix}/include,g' $(1)/opt/lib/pkgconfig/mount.pc
+	$(SED) 's,/opt/lib,$$$${exec_prefix}/lib,g' $(1)/opt/lib/pkgconfig/mount.pc
 	$(CP) $(PKG_INSTALL_DIR)/opt/lib/pkgconfig/smartcols.pc $(1)/opt/lib/pkgconfig
+	$(SED) 's,/opt/include,$$$${prefix}/include,g' $(1)/opt/lib/pkgconfig/smartcols.pc
+	$(SED) 's,/opt/lib,$$$${exec_prefix}/lib,g' $(1)/opt/lib/pkgconfig/smartcols.pc
 	$(CP) $(PKG_INSTALL_DIR)/opt/lib/pkgconfig/uuid.pc $(1)/opt/lib/pkgconfig
+	$(SED) 's,/opt/include,$$$${prefix}/include,g' $(1)/opt/lib/pkgconfig/uuid.pc
+	$(SED) 's,/opt/lib,$$$${exec_prefix}/lib,g' $(1)/opt/lib/pkgconfig/uuid.pc
 
 	$(INSTALL_DIR) $(1)/opt/include/blkid
 	$(CP) $(PKG_INSTALL_DIR)/opt/include/blkid/blkid.h $(1)/opt/include/blkid
@@ -658,6 +694,11 @@ define Package/eject/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/opt/bin/eject $(1)/opt/bin/
 endef
 
+define Package/fallocate/install
+	$(INSTALL_DIR) $(1)/opt/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/opt/bin/fallocate $(1)/opt/bin/
+endef
+
 define Package/fdisk/install
 	$(INSTALL_DIR) $(1)/opt/sbin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/opt/sbin/fdisk $(1)/opt/sbin/
@@ -691,6 +732,11 @@ endef
 define Package/ionice/install
 	$(INSTALL_DIR) $(1)/opt/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/opt/bin/ionice $(1)/opt/bin/
+endef
+
+define Package/hardlink/install
+	$(INSTALL_DIR) $(1)/opt/bin
+	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/opt/bin/hardlink $(1)/opt/bin/
 endef
 
 define Package/hwclock/install
@@ -820,11 +866,13 @@ define Package/wipefs/install
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/opt/sbin/wipefs $(1)/opt/sbin/
 endef
 
+# these lines need to be ordered by dependency because of ABI versioning
+$(eval $(call BuildPackage,libuuid))
 $(eval $(call BuildPackage,libblkid))
 $(eval $(call BuildPackage,libfdisk))
+
 $(eval $(call BuildPackage,libmount))
 $(eval $(call BuildPackage,libsmartcols))
-$(eval $(call BuildPackage,libuuid))
 $(eval $(call BuildPackage,agetty))
 $(eval $(call BuildPackage,blkdiscard))
 $(eval $(call BuildPackage,blkid))
@@ -834,12 +882,14 @@ $(eval $(call BuildPackage,cfdisk))
 $(eval $(call BuildPackage,column))
 $(eval $(call BuildPackage,dmesg))
 $(eval $(call BuildPackage,eject))
+$(eval $(call BuildPackage,fallocate))
 $(eval $(call BuildPackage,fdisk))
 $(eval $(call BuildPackage,findfs))
 $(eval $(call BuildPackage,flock))
 $(eval $(call BuildPackage,fsfreeze))
 $(eval $(call BuildPackage,fstrim))
 $(eval $(call BuildPackage,getopt))
+$(eval $(call BuildPackage,hardlink))
 $(eval $(call BuildPackage,ionice))
 $(eval $(call BuildPackage,hwclock))
 $(eval $(call BuildPackage,logger))

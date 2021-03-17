@@ -7,23 +7,25 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=liblz4
-PKG_VERSION:=1.9.2
+PKG_NAME:=lz4
+PKG_VERSION:=1.9.3
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/lz4/lz4/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=658ba6191fa44c92280d4aa2c271b0f4fbc0e34d249578dd05e50e76d0e5efcc
-PKG_BUILD_DIR:=$(BUILD_DIR)/lz4-$(PKG_VERSION)
+PKG_HASH:=030644df4611007ff7dc962d981f390361e6c97a34e5cbc393ddfbe019ffe2c1
 
 PKG_MAINTAINER:=Darik Horn <dajhorn@vanadac.com>
 
+PKG_INSTALL:=1
 PKG_BUILD_PARALLEL:=1
-CMAKE_INSTALL:=1
-CMAKE_SOURCE_SUBDIR:=contrib/cmake_unofficial
+PKG_BUILD_DEPENDS:=meson/host
+PKG_CONFIG_DEPENDS:=CONFIG_PACKAGE_lz4
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/cmake.mk
+include ../../devel/meson/meson.mk
+
+MESON_BUILD_DIR:=$(PKG_BUILD_DIR)/contrib/meson/openwrt-build
 
 define Package/lz4/Default
   SUBMENU:=Compression
@@ -65,18 +67,30 @@ define Package/lz4/description
   This package provides the lz4 binaries.
 endef
 
-TARGET_CFLAGS += $(FPIC) -DLZ4_FORCE_MEMORY_ACCESS=1 -DXXH_FORCE_MEMORY_ACCESS=1 -fhonour-copts -O3
-
-CMAKE_OPTIONS += \
-	-DCMAKE_INSTALL_MANDIR=/opt/share/man \
-	-DLZ4_BUILD_LEGACY_LZ4C=OFF
+MESON_ARGS += \
+	-Ddebug_level=0 \
+	-Dbacktrace=false \
+	-Dbin_programs=$(if $(CONFIG_PACKAGE_lz4),true,false) \
+	-Dbin_tests=false \
+	-Dbin_contrib=false \
+	-Dbin_examples=false \
+	-Db_lto=false
 
 ifeq ($(CONFIG_LZ4_OPTIMIZE_SPEED),y)
 	TARGET_CFLAGS := $(filter-out -O%,$(TARGET_CFLAGS)) -O3
 endif
-
-TARGET_CFLAGS += $(FPIC) -ffunction-sections -fdata-sections -flto
+TARGET_CFLAGS += $(FPIC) -DLZ4_FORCE_MEMORY_ACCESS=1 -DXXH_FORCE_MEMORY_ACCESS=1 \
+	-ffunction-sections -fdata-sections
 TARGET_LDFLAGS += -Wl,--gc-sections
+
+define Build/InstallDev
+	$(INSTALL_DIR) $(1)/opt/include
+	$(CP) $(PKG_INSTALL_DIR)/opt/include/*.h $(1)/opt/include
+	$(INSTALL_DIR) $(1)/opt/lib
+	$(CP) $(PKG_INSTALL_DIR)/opt/lib/liblz4.so* $(1)/opt/lib
+	$(INSTALL_DIR) $(1)/opt/lib/pkgconfig
+	$(CP) $(PKG_INSTALL_DIR)/opt/lib/pkgconfig/liblz4.pc $(1)/opt/lib/pkgconfig
+endef
 
 define Package/liblz4/install
 	$(INSTALL_DIR) $(1)/opt/lib
@@ -85,7 +99,7 @@ endef
 
 define Package/lz4/install
 	$(INSTALL_DIR) $(1)/opt/bin
-	$(CP) $(PKG_INSTALL_DIR)/opt/bin/{lz4,lz4cat,unlz4} $(1)/opt/bin/
+	$(CP) $(PKG_INSTALL_DIR)/opt/bin/{lz4,lz4c,lz4cat,unlz4} $(1)/opt/bin/
 endef
 
 $(eval $(call BuildPackage,liblz4))

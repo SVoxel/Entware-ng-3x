@@ -1,0 +1,4 @@
+*.sw[op]
+/t/*.sh
+/t/*.out
+/t/*.err
